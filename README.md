@@ -8,21 +8,16 @@ Every session is fresh, but with megg, your agent remembers.
 
 ## ⚡️ Quick Start
 
-### 1. Install
-```bash
-git clone https://github.com/opencode-experiment/megg.git
-cd megg
-npm install && npm run build
-```
+### 1. Configure (Claude Desktop / MCP Client)
+You can run `megg` directly using `npx`—no installation required.
 
-### 2. Configure (Claude Desktop / MCP Client)
 Add this to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "megg": {
-      "command": "node",
-      "args": ["/absolute/path/to/megg/build/index.js"]
+      "command": "npx",
+      "args": ["-y", "megg@latest"]
     }
   }
 }
