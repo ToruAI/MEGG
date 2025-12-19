@@ -1,6 +1,6 @@
 # megg
 
-> **Git-native, contextual memory infrastructure that lives directly in your codebase.**
+> **Git-native, contextual memory infrastructure that lives directly in your directory.**
 
 **megg** turns stateless AI agents into long-term employees. It provides a standardized way for agents to read, store, and manage context directly within your project's folder structure.
 
