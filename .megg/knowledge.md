@@ -1,6 +1,6 @@
 ---
 created: 2026-01-14T22:13:24.420Z
-updated: 2026-01-14T22:13:58.764Z
+updated: 2026-01-15T09:16:25.131Z
 type: knowledge
 ---
 
@@ -161,3 +161,69 @@ NOT for code paths:
 - Decisions like 'auth pattern' don't belong to a folder
 - Use **topics** in knowledge.md instead of folder hierarchy
 - Topics: auth, api, security - searchable and filterable
+
+---
+
+## 2026-01-15 - Tako values transparency in tooling
+**Type:** pattern
+**Topics:** megg, ux, transparency, tako-preference
+
+When building tools for Tako, prioritize **transparency over abstraction**.
+
+**Example:** For MEGG's SessionStart hook output:
+- ❌ `megg: tako → MEGG (knowledge: full)` - too abstract
+- ✅ Show actual file paths loaded, one per line
+
+Tako wants to see:
+1. What files were actually loaded
+2. Absolute paths (not ~ shortcuts)
+3. Clear labeling ("MEGG loaded. Content:")
+
+**Why:** Understanding exactly what's happening builds trust and helps debugging.
+
+---
+
+## 2026-01-15 - Collaborative learning - always ask before capturing
+**Type:** decision
+**Topics:** megg, learning, workflow, ux
+
+Learning should be collaborative, not autonomous.
+
+**Flow:**
+1. Agent notices potential learning moment
+2. Agent asks user: "Should we capture X as a [type]?"
+3. User confirms, refines, or rejects
+4. Only then: learn()
+
+**Why:**
+- Prevents trash accumulation in knowledge.md
+- User knows what's actually valuable
+- Forces agent to articulate what it noticed
+- User can refine the framing
+
+**Learning rules in info.md** define what the agent should *watch for* and *ask about*, not what to auto-capture.
+
+---
+
+## 2026-01-15 - Messaging tone for megg user-facing text
+**Type:** pattern
+**Topics:** megg, ux, messaging, tone
+
+User-facing messages in megg should be:
+
+**Tone:**
+- Warm but brief
+- Team/collaboration framing ("Good teams...")
+- No "I" - use "Agent" when referring to the AI
+- Practical, actionable
+
+**Example (SessionStart hook message):**
+```
+Good teams remember what works. Agent asks before saving. If worth remembering, just do it manually. Learning patterns evolve over time.
+```
+
+**Avoid:**
+- Dry, technical language ("Learning: Agent will ask...")
+- Using "I" for the agent
+- Colon-heavy formatting
+- Over-explaining

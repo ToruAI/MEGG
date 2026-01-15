@@ -53,11 +53,18 @@ export interface KnowledgeResult {
   warning?: string;
 }
 
+export interface MeggFile {
+  name: string;
+  path: string;
+  loaded: boolean;
+}
+
 export interface ContextResult {
   chain: DomainInfo[];
   knowledge: KnowledgeResult | null;
   siblings: string[];
   children: string[];
+  files: MeggFile[];  // All files in current .megg directory
 }
 
 // ============================================================================
@@ -136,6 +143,7 @@ export interface MaintenanceReport {
 // ============================================================================
 
 export interface SessionStartOutput {
+  systemMessage?: string;  // Shown to user in terminal
   hookSpecificOutput: {
     hookEventName: 'SessionStart';
     additionalContext: string;

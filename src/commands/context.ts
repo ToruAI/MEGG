@@ -10,11 +10,13 @@
  */
 
 import path from 'path';
+import fs from 'fs/promises';
 import type {
   ContextResult,
   DomainInfo,
   KnowledgeResult,
   SessionStartOutput,
+  MeggFile,
   DEFAULT_CONFIG,
 } from '../types.js';
 import { exists, readFile } from '../utils/files.js';
@@ -128,11 +130,34 @@ export async function context(targetPath?: string, topic?: string): Promise<Cont
   const siblings = await findSiblingMegg(cwd);
   const children = await findChildMegg(cwd);
 
+  // 5. Discover all files in current .megg directory
+  const files: MeggFile[] = [];
+  if (targetMegg) {
+    try {
+      const entries = await fs.readdir(targetMegg, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isFile() && entry.name.endsWith('.md')) {
+          const filePath = path.join(targetMegg, entry.name);
+          const isLoaded = entry.name === INFO_FILE_NAME ||
+            (entry.name === KNOWLEDGE_FILE_NAME && knowledge !== null);
+          files.push({
+            name: entry.name,
+            path: filePath,
+            loaded: isLoaded,
+          });
+        }
+      }
+    } catch {
+      // Skip if can't read directory
+    }
+  }
+
   return {
     chain,
     knowledge,
     siblings,
     children,
+    files,
   };
 }
 
@@ -168,6 +193,15 @@ export function formatContextForDisplay(result: ContextResult): string {
     out += result.knowledge.content + '\n\n';
   }
 
+  // Files in .megg
+  if (result.files.length > 0) {
+    const notLoaded = result.files.filter(f => !f.loaded);
+    if (notLoaded.length > 0) {
+      out += `## Available Files (not loaded)\n\n`;
+      out += notLoaded.map(f => `- ${f.name}`).join('\n') + '\n\n';
+    }
+  }
+
   // Navigation
   if (result.siblings.length > 0) {
     out += `## Other Domains\n\n`;
@@ -189,7 +223,37 @@ export function formatContextForDisplay(result: ContextResult): string {
 export function formatForSessionStartHook(result: ContextResult): SessionStartOutput {
   const contextText = formatContextForDisplay(result);
 
+  // Build a status message showing actual files loaded
+  const loadedFiles: string[] = [];
+
+  for (const c of result.chain) {
+    loadedFiles.push(path.join(c.meggPath, 'info.md'));
+  }
+
+  if (result.knowledge && result.chain.length > 0) {
+    const knowledgePath = path.join(
+      result.chain[result.chain.length - 1].meggPath,
+      'knowledge.md'
+    );
+    loadedFiles.push(`${knowledgePath} (${result.knowledge.mode}, ${result.knowledge.tokens} tokens)`);
+  }
+
+  // Find files that are available but not loaded
+  const availableFiles = result.files.filter(f => !f.loaded);
+
+  let statusMessage: string;
+  if (loadedFiles.length === 0) {
+    statusMessage = 'MEGG: no .megg found';
+  } else {
+    statusMessage = 'MEGG loaded:\n' + loadedFiles.map(f => `  ${f}`).join('\n');
+    if (availableFiles.length > 0) {
+      statusMessage += '\nAvailable (not loaded):\n' + availableFiles.map(f => `  ${f.path}`).join('\n');
+    }
+    statusMessage += '\n\nGood teams remember what works. Agent asks before saving. If worth remembering, just do it manually. Learning patterns evolve over time.';
+  }
+
   return {
+    systemMessage: statusMessage,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext: contextText,

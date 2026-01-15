@@ -19,7 +19,14 @@ Memory system for AI agents. Turns stateless agents into 'good employees' that r
 3. Entry types: decision, pattern, gotcha, context
 4. Size thresholds: 8k full, 16k summary, >16k blocked
 5. Topics for categorization (not folder paths)
-6. Backward compatible - old tools work but deprecated
+6. Collaborative learning - always ask before capturing
 
-## Memory Files
-- knowledge.md: architecture decisions, implementation patterns, gotchas
+## Learning
+Watch for and ask about capturing:
+- User preferences about UX/transparency
+- Architecture decisions for megg itself
+- Hook integration gotchas
+- Patterns for AI memory systems
+
+## Files
+- knowledge.md (auto-loaded)

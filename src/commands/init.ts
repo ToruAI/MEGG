@@ -105,14 +105,14 @@ async function analyzeProject(root: string): Promise<InitAnalysis> {
   // 3. Determine questions based on type
   const questions = structure.suggestedType === 'domain'
     ? [
-        'What is this domain/area about?',
-        'Any rules I should always follow here?',
-        'Key stakeholders or contacts?',
+        'What is this domain/area about? (Context)',
+        'Any rules I should always follow here? (Rules)',
+        'What should I watch for and ask about capturing? (Learning)',
       ]
     : [
-        'What is this project and what problem does it solve?',
-        'Any coding conventions or rules to follow?',
-        'Key technical decisions already made?',
+        'What is this project and what problem does it solve? (Context)',
+        'Any coding conventions or rules to follow? (Rules)',
+        'What should I watch for and ask about capturing? (Learning)',
       ];
 
   return {
@@ -318,24 +318,30 @@ export function generateInfoTemplate(
   name: string,
   type: 'domain' | 'codebase',
   context: string,
-  rules: string[]
+  rules: string[],
+  learning?: string[]
 ): string {
   const rulesSection = rules.length > 0
     ? rules.map((r, i) => `${i + 1}. ${r}`).join('\n')
     : '1. [Add your rules here]';
 
+  const learningSection = learning && learning.length > 0
+    ? learning.map(l => `- ${l}`).join('\n')
+    : '- User preferences and values\n- Non-obvious decisions\n- Gotchas and traps discovered';
+
   return `# ${name}
 
 ## Context
-
 ${context}
 
 ## Rules
-
 ${rulesSection}
 
-## Memory Files
+## Learning
+Watch for and ask about capturing:
+${learningSection}
 
-- knowledge.md: decisions, patterns, gotchas, and context
+## Files
+- knowledge.md (auto-loaded)
 `;
 }
