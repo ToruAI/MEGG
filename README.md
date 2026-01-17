@@ -66,7 +66,7 @@ This creates a `.megg/` folder with:
 - `info.md` - Project identity and rules
 - `knowledge.md` - Accumulated learnings
 
-That's it! Context loads automatically when you start Claude Code.
+That's it! Run `megg context` to verify, then context loads automatically when you start Claude Code.
 
 ---
 
@@ -382,7 +382,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 - [GitHub repository](https://github.com/toruai/megg)
 - [MCP Protocol](https://modelcontextprotocol.io/)
 - [Report issues](https://github.com/toruai/megg/issues)
-
----
-
-**Keywords:** AI memory, LLM context management, Claude memory, GPT memory, MCP server, AI agent memory, persistent AI context, knowledge management for AI, Model Context Protocol, AI assistant memory, stateful AI agents
