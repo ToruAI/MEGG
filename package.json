@@ -1,26 +1,54 @@
 {
   "name": "megg",
-  "version": "1.0.0",
-  "description": "MEGG - Memory Enhancement for GenAI Guides",
+  "version": "1.1.0",
+  "description": "megg - Memory for AI Agents. Simplified knowledge system with auto-discovery and size-aware loading.",
   "main": "build/index.js",
   "bin": {
-    "megg": "./build/index.js"
+    "megg": "./build/cli.js",
+    "megg-mcp": "./build/index.js"
   },
   "files": [
-    "build"
+    "build",
+    "hooks",
+    ".claude"
   ],
   "directories": {
     "test": "tests"
   },
   "type": "module",
   "scripts": {
-    "build": "tsc && chmod +x build/index.js",
+    "build": "tsc && chmod +x build/index.js && chmod +x build/cli.js",
     "start": "node build/index.js",
+    "cli": "node build/cli.js",
     "test": "vitest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "ai",
+    "ai-memory",
+    "ai-agents",
+    "llm",
+    "llm-memory",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "gpt",
+    "openai",
+    "anthropic",
+    "knowledge-management",
+    "context-management",
+    "persistent-memory",
+    "agent-memory",
+    "ai-assistant",
+    "stateful-agents"
+  ],
+  "author": "ToruAI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toruai/megg"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
     "zod": "^3.23.0"

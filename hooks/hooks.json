@@ -1,0 +1,17 @@
+{
+  "description": "megg - Memory for AI Agents. Auto-loads context at session start.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx megg context --json 2>/dev/null || echo '{}'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

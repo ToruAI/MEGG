@@ -1,199 +1,196 @@
 #!/usr/bin/env node
+/**
+ * megg - MCP Server
+ *
+ * Simplified memory system for AI agents.
+ * 5 core tools: init, context, learn, maintain, state
+ */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { initMegg } from "./tools/init.js";
-import { initFinalize } from "./tools/init-finalize.js";
-import { recall } from "./tools/recall.js";
-import { remember } from "./tools/remember.js";
-import { mapMegg } from "./tools/map.js";
-import { getFile } from "./tools/get.js";
-import { modifyRules } from "./tools/modify-rules.js";
-import { settle } from "./tools/settle.js";
-import { awake } from "./tools/awake.js";
+
+import { context, formatContextForDisplay } from "./commands/context.js";
+import { learn, isValidEntryType } from "./commands/learn.js";
+import { init, initCommand } from "./commands/init.js";
+import { maintain, formatMaintenanceReport } from "./commands/maintain.js";
+import { state, formatStateForDisplay } from "./commands/state.js";
 
 // Create server instance
 const server = new McpServer({
   name: "megg",
-  version: "1.0.0",
+  version: "1.1.0",
 });
 
 const PROJECT_ROOT = process.cwd();
 
-// Register tools
+// ============================================================================
+// Core Tools (v1.1.0)
+// ============================================================================
 
 server.tool(
-  "awake",
-  "Orient agent at session start. Returns identity (info.md) and memory map (map.md).",
-  {},
-  async () => {
-    const result = await awake(PROJECT_ROOT);
-    return { content: [{ type: "text", text: result }] };
-  }
-);
-
-server.tool(
-  "init",
-  "Initialize megg memory in the current project. Returns file tree, key files to read, and instructions for the AI to follow. The AI should then scan, analyze, interview the user, and call init_finalize.",
+  "context",
+  "Load context chain and knowledge for current location. Auto-discovers .megg hierarchy, loads info chain, and includes knowledge (full if <8k tokens, summary if <16k, blocked if larger). Use topic parameter to filter knowledge by specific topic.",
   {
-    projectRoot: z.string().optional().describe("Root directory (defaults to cwd)"),
+    path: z.string().optional().describe("Target path (defaults to cwd)"),
+    topic: z.string().optional().describe("Filter knowledge by topic"),
   },
-  async ({ projectRoot }) => {
-    const root = projectRoot || PROJECT_ROOT;
-    const result = await initMegg(root);
-    
-    // Format response for AI consumption
-    const response = `## Status
-${result.status === 'already_initialized' ? '⚠️ megg is already initialized. Proceeding will help you understand or update the structure.' : '✓ Ready to initialize.'}
-
-## Project Tree
-\`\`\`
-${result.treeFormatted}
-\`\`\`
-
-## Key Files to Read
-${result.keyFiles.length > 0 
-  ? result.keyFiles.map(f => `- ${f}`).join('\n')
-  : '(No standard config files detected. Examine the tree and read files that seem important.)'}
-
-${result.instructions}`;
-
-    return { content: [{ type: "text", text: response }] };
-  }
-);
-
-server.tool(
-  "init_finalize",
-  "Finalize megg initialization by writing all proposed .megg files. Call this after scanning, analyzing, and interviewing the user.",
-  {
-    files: z.array(z.object({
-      path: z.string().describe("Path relative to project root (e.g. '.megg/info.md', 'src/.megg/decisions.md')"),
-      content: z.string().describe("Markdown content without frontmatter (frontmatter is added automatically)"),
-      type: z.string().describe("File type: 'context', 'decisions', 'workflow', or custom"),
-    })).describe("Array of files to create"),
-  },
-  async ({ files }) => {
+  async ({ path: targetPath, topic }) => {
     try {
-      const result = await initFinalize(PROJECT_ROOT, { files });
-      
-      if (result.success) {
-        return { 
-          content: [{ 
-            type: "text", 
-            text: `✓ megg initialized successfully.\n\nCreated files:\n${result.created.map(f => `  - ${f}`).join('\n')}` 
-          }] 
-        };
-      } else {
-        return { 
-          isError: true,
-          content: [{ 
-            type: "text", 
-            text: `✗ Initialization failed.\n\nErrors:\n${result.errors.map(e => `  - ${e}`).join('\n')}${result.created.length > 0 ? `\n\nPartially created:\n${result.created.map(f => `  - ${f}`).join('\n')}` : ''}` 
-          }] 
-        };
-      }
+      const result = await context(targetPath || PROJECT_ROOT, topic);
+      const formatted = formatContextForDisplay(result);
+      return { content: [{ type: "text", text: formatted }] };
     } catch (err: any) {
-      return { 
+      return {
         isError: true,
-        content: [{ type: "text", text: `Error: ${err.message}` }] 
+        content: [{ type: "text", text: `Error: ${err.message}` }],
       };
     }
   }
 );
 
 server.tool(
-  "recall",
-  "Gather context from .megg folders (info.md chain + optional specific files)",
+  "learn",
+  "Add a knowledge entry to the nearest .megg/knowledge.md. Entries have type (decision/pattern/gotcha/context), topics for categorization, and content.",
   {
-    path: z.string().default(".").describe("Path to recall context for (defaults to project root)"),
-    files: z.array(z.string()).optional().describe("Specific files to include from the target .megg directory"),
+    title: z.string().describe("Short title for the entry"),
+    type: z.enum(["decision", "pattern", "gotcha", "context"]).describe("Entry type: decision (architectural choice), pattern (how we do things), gotcha (trap to avoid), context (background info)"),
+    topics: z.array(z.string()).describe("Tags for categorization (e.g., ['auth', 'api', 'security'])"),
+    content: z.string().describe("The knowledge content in markdown"),
+    path: z.string().optional().describe("Target path (defaults to cwd, finds nearest .megg)"),
   },
-  async ({ path: targetPath, files }) => {
-    const result = await recall(PROJECT_ROOT, targetPath, files);
-    return { content: [{ type: "text", text: result }] };
-  }
-);
-
-server.tool(
-  "remember",
-  "Store a memory artifact at a specific path",
-  {
-    path: z.string().describe("Path to file (e.g. api/.megg/decisions.md)"),
-    content: z.string().describe("Content to store"),
-    isNew: z.boolean().default(false).describe("True to create new file with frontmatter, false to append entry"),
-  },
-  async ({ path: filePath, content, isNew }) => {
+  async ({ title, type, topics, content, path: targetPath }) => {
     try {
-      const result = await remember(PROJECT_ROOT, filePath, content, isNew);
-      return { content: [{ type: "text", text: result }] };
+      const result = await learn({
+        title,
+        type,
+        topics,
+        content,
+        path: targetPath || PROJECT_ROOT,
+      });
+
+      if (!result.success) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error: ${result.error}` }],
+        };
+      }
+
+      let response = `✓ Added "${title}" to ${result.path}`;
+      if (result.warning) {
+        response += `\n\n⚠️ ${result.warning}`;
+      }
+
+      return { content: [{ type: "text", text: response }] };
     } catch (err: any) {
-       return { 
-           isError: true,
-           content: [{ type: "text", text: `Error: ${err.message}` }] 
-       };
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error: ${err.message}` }],
+      };
     }
   }
 );
 
 server.tool(
-  "map",
-  "Show the structure of .megg folders",
-  {},
-  async () => {
-    const result = await mapMegg(PROJECT_ROOT);
-    return { content: [{ type: "text", text: result }] };
-  }
-);
-
-server.tool(
-  "get",
-  "Read a specific memory file",
+  "init",
+  "Initialize megg in current directory. Without content: analyzes project and returns questions to ask. With content: creates .megg/info.md and optionally knowledge.md.",
   {
-    path: z.string().describe("Path to the file"),
+    projectRoot: z.string().optional().describe("Root directory (defaults to cwd)"),
+    info: z.string().optional().describe("Content for info.md (if provided, creates the file)"),
+    knowledge: z.string().optional().describe("Initial content for knowledge.md (optional)"),
   },
-  async ({ path: filePath }) => {
+  async ({ projectRoot, info, knowledge }) => {
     try {
-      const result = await getFile(PROJECT_ROOT, filePath);
-      return { content: [{ type: "text", text: result }] };
-    } catch (err: any) {
-        return { 
-            isError: true,
-            content: [{ type: "text", text: `Error: ${err.message}` }] 
-        };
-     }
-  }
-);
+      const root = projectRoot || PROJECT_ROOT;
 
-server.tool(
-  "modify_rules",
-  "Update the Rules section of the root info.md",
-  {
-    rules: z.string().describe("New rules content"),
-  },
-  async ({ rules }) => {
-    try {
-      const result = await modifyRules(PROJECT_ROOT, rules);
-      return { content: [{ type: "text", text: result }] };
+      if (info) {
+        // Create files mode
+        const result = await init(root, { info, knowledge });
+        if ('success' in result) {
+          return { content: [{ type: "text", text: result.message }] };
+        }
+      }
+
+      // Analysis mode
+      const output = await initCommand(root);
+      return { content: [{ type: "text", text: output }] };
     } catch (err: any) {
-         return { 
-            isError: true,
-            content: [{ type: "text", text: `Error: ${err.message}` }] 
-        };
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error: ${err.message}` }],
+      };
     }
   }
 );
 
 server.tool(
-  "settle",
-  "Consolidate or clean up memory files",
+  "maintain",
+  "Analyze knowledge files for bloat, staleness, and duplicates. Returns a report with suggested cleanup actions.",
   {
-    path: z.string().optional().describe("Specific file path to settle"),
+    path: z.string().optional().describe("Root path to scan (defaults to cwd)"),
   },
-  async ({ path: filePath }) => {
-    const result = await settle(PROJECT_ROOT, filePath);
-    return { content: [{ type: "text", text: result }] };
+  async ({ path: targetPath }) => {
+    try {
+      const report = await maintain(targetPath || PROJECT_ROOT);
+      const formatted = formatMaintenanceReport(report);
+      return { content: [{ type: "text", text: formatted }] };
+    } catch (err: any) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error: ${err.message}` }],
+      };
+    }
   }
 );
+
+server.tool(
+  "state",
+  "Manage ephemeral session state for cross-session handoff. Call without args to read current state. Call with content to write state. Call with status='done' to clear state. State auto-expires after 48h.",
+  {
+    content: z.string().optional().describe("State content to write (Working On, Progress, Next, Context sections)"),
+    status: z.enum(["active", "done"]).optional().describe("Set to 'done' to clear state"),
+    path: z.string().optional().describe("Target path (defaults to cwd)"),
+  },
+  async ({ content, status, path: targetPath }) => {
+    try {
+      const result = await state({
+        content,
+        status,
+        path: targetPath || PROJECT_ROOT,
+      });
+
+      if (!result.success) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error: ${result.error}` }],
+        };
+      }
+
+      let response: string;
+      if (status === 'done') {
+        response = '✓ State cleared.';
+      } else if (content) {
+        response = `✓ State saved to ${result.state?.path}`;
+        if (result.warning) {
+          response += `\n\n⚠️ ${result.warning}`;
+        }
+      } else {
+        response = formatStateForDisplay(result.state || null);
+      }
+
+      return { content: [{ type: "text", text: response }] };
+    } catch (err: any) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error: ${err.message}` }],
+      };
+    }
+  }
+);
+
+// ============================================================================
+// Main
+// ============================================================================
 
 async function main() {
   const transport = new StdioServerTransport();
