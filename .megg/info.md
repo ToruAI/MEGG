@@ -9,7 +9,7 @@ type: context
 ## Context
 Memory system for AI agents. Turns stateless agents into 'good employees' that remember context across sessions.
 
-**Version:** 2.0.0
+**Version:** 1.1.0
 **Stack:** TypeScript, MCP SDK, Node.js
 **Status:** Active development
 

@@ -254,8 +254,8 @@ We chose JWT with refresh tokens because:
 
 v1 tools still work but are deprecated:
 
-| v1 | v2 |
-|----|-----|
+| v1 | v1.1.0 |
+|----|--------|
 | `awake()` | `context()` |
 | `recall()` | `context()` |
 | `remember()` | `learn()` |
