@@ -39,6 +39,30 @@ const FULL_LOAD_THRESHOLD = 8000;    // Load full if under this
 const SUMMARY_THRESHOLD = 16000;      // Show summary if under this
 // Above SUMMARY_THRESHOLD = blocked
 
+const STALE_INFO_DAYS = 30;  // Warn if info.md not updated in this many days
+
+/**
+ * Parse `updated` timestamp from info.md frontmatter.
+ * Returns null if not found or unparseable.
+ */
+function parseUpdatedDate(infoContent: string): Date | null {
+  const match = infoContent.match(/^updated:\s*(.+)$/m);
+  if (!match) return null;
+  const d = new Date(match[1].trim());
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Returns stale warning string if info.md is older than STALE_INFO_DAYS, else null.
+ */
+function getStaleWarning(infoContent: string, domain: string): string | undefined {
+  const updated = parseUpdatedDate(infoContent);
+  if (!updated) return undefined;
+  const daysSince = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysSince < STALE_INFO_DAYS) return undefined;
+  return `⚠️  ${domain}/info.md last updated ${daysSince} days ago — still current? Run: megg init --update`;
+}
+
 /**
  * Main context command - gathers all relevant context for a path.
  */
@@ -54,11 +78,13 @@ export async function context(targetPath?: string, topic?: string): Promise<Cont
     const infoPath = path.join(meggPath, INFO_FILE_NAME);
     try {
       const info = await readFile(infoPath);
+      const domain = getDomainName(meggPath);
       chain.push({
-        domain: getDomainName(meggPath),
+        domain,
         path: path.dirname(meggPath),
         meggPath,
         info,
+        staleWarning: getStaleWarning(info, domain),
       });
     } catch {
       // Skip if can't read
@@ -189,6 +215,12 @@ export function formatContextForDisplay(result: ContextResult): string {
       out += `- **${item.domain}**: ${firstLine}\n`;
     }
     out += '\n';
+  }
+
+  // Stale warnings (any level in chain)
+  const staleWarnings = result.chain.filter(c => c.staleWarning).map(c => c.staleWarning!);
+  if (staleWarnings.length > 0) {
+    out += staleWarnings.join('\n') + '\n\n';
   }
 
   // Current context (deepest level info.md)

@@ -40,6 +40,7 @@ export interface DomainInfo {
   path: string;
   meggPath: string;
   info: string;
+  staleWarning?: string;  // Set if info.md hasn't been updated recently
 }
 
 export type KnowledgeMode = 'full' | 'summary' | 'blocked';
@@ -117,6 +118,20 @@ export interface InitAnalysis {
 export interface InitContent {
   info: string;
   knowledge?: string;
+  update?: boolean;  // If true, update existing info.md instead of creating new
+}
+
+export interface InfoSection {
+  heading: string;
+  content: string;
+}
+
+export interface UpdateAnalysis {
+  status: 'needs_update';
+  currentInfo: string;
+  sections: InfoSection[];
+  questions: string[];
+  daysSinceUpdate: number;
 }
 
 // ============================================================================

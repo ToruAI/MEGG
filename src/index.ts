@@ -19,7 +19,7 @@ import { state, formatStateForDisplay } from "./commands/state.js";
 // Create server instance
 const server = new McpServer({
   name: "megg",
-  version: "1.1.0",
+  version: "1.2.0",
 });
 
 const PROJECT_ROOT = process.cwd();
@@ -93,26 +93,27 @@ server.tool(
 
 server.tool(
   "init",
-  "Initialize megg in current directory. Without content: analyzes project and returns questions to ask. With content: creates .megg/info.md and optionally knowledge.md.",
+  "Initialize megg in current directory. Without content: analyzes project (or returns update analysis if already initialized). With content: creates .megg/info.md and optionally knowledge.md. Use update=true to update existing info.md (preserves created timestamp).",
   {
     projectRoot: z.string().optional().describe("Root directory (defaults to cwd)"),
-    info: z.string().optional().describe("Content for info.md (if provided, creates the file)"),
+    info: z.string().optional().describe("Content for info.md (if provided, creates or updates the file)"),
     knowledge: z.string().optional().describe("Initial content for knowledge.md (optional)"),
+    update: z.boolean().optional().describe("If true, update existing info.md instead of creating new (preserves created timestamp)"),
   },
-  async ({ projectRoot, info, knowledge }) => {
+  async ({ projectRoot, info, knowledge, update }) => {
     try {
       const root = projectRoot || PROJECT_ROOT;
 
       if (info) {
-        // Create files mode
-        const result = await init(root, { info, knowledge });
+        // Create or update files mode
+        const result = await init(root, { info, knowledge, update });
         if ('success' in result) {
           return { content: [{ type: "text", text: result.message }] };
         }
       }
 
-      // Analysis mode
-      const output = await initCommand(root);
+      // Analysis mode (fresh init or update analysis)
+      const output = await initCommand(root, undefined, undefined, update);
       return { content: [{ type: "text", text: output }] };
     } catch (err: any) {
       return {

@@ -1,6 +1,6 @@
 {
   "name": "megg",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "megg - Memory for AI Agents. Simplified knowledge system with auto-discovery and size-aware loading.",
   "main": "build/index.js",
   "bin": {

@@ -9,7 +9,7 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import type { InitAnalysis, InitContent, DomainInfo, ProjectStructure } from '../types.js';
+import type { InitAnalysis, InitContent, DomainInfo, ProjectStructure, UpdateAnalysis, InfoSection } from '../types.js';
 import { exists, readFile, writeFile, getTimestamp, ensureDir } from '../utils/files.js';
 import { findAncestorMegg, getDomainName, MEGG_DIR_NAME, INFO_FILE_NAME, KNOWLEDGE_FILE_NAME } from '../utils/paths.js';
 
@@ -55,26 +55,65 @@ const SKIP_DIRS = [
 export async function init(
   projectRoot?: string,
   content?: InitContent
-): Promise<InitAnalysis | { success: boolean; message: string }> {
+): Promise<InitAnalysis | UpdateAnalysis | { success: boolean; message: string }> {
   const root = projectRoot || process.cwd();
   const meggDir = path.join(root, MEGG_DIR_NAME);
   const infoPath = path.join(meggDir, INFO_FILE_NAME);
 
-  // If content provided, create the files
+  // If content provided, create or update the files
   if (content) {
     return createMeggFiles(root, content);
   }
 
-  // Check if already initialized
+  // If already initialized → return update analysis instead of error
   if (await exists(infoPath)) {
-    return {
-      status: 'already_initialized',
-      message: 'megg already initialized. Use context() to load.',
-    };
+    return analyzeForUpdate(infoPath);
   }
 
-  // Analyze project
+  // Analyze project for fresh init
   return analyzeProject(root);
+}
+
+/**
+ * Reads existing info.md and returns section-by-section update analysis.
+ */
+async function analyzeForUpdate(infoPath: string): Promise<UpdateAnalysis> {
+  const current = await readFile(infoPath);
+
+  // Parse updated date from frontmatter
+  const updatedMatch = current.match(/^updated:\s*(.+)$/m);
+  const updatedDate = updatedMatch ? new Date(updatedMatch[1].trim()) : null;
+  const daysSinceUpdate = updatedDate && !isNaN(updatedDate.getTime())
+    ? Math.floor((Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  // Parse sections (## headings) from info content (strip frontmatter first)
+  const bodyMatch = current.match(/^---[\s\S]*?---\n([\s\S]*)$/);
+  const body = bodyMatch ? bodyMatch[1] : current;
+
+  const sections: InfoSection[] = [];
+  const sectionRegex = /^(#{1,3} .+)\n([\s\S]*?)(?=^#{1,3} |\s*$)/gm;
+  let match;
+  while ((match = sectionRegex.exec(body)) !== null) {
+    const heading = match[1].replace(/^#+\s*/, '').trim();
+    const content = match[2].trim();
+    if (heading && content) {
+      sections.push({ heading, content });
+    }
+  }
+
+  // Generate targeted question per section
+  const questions = sections.map(s =>
+    `**${s.heading}** currently says:\n> ${s.content.split('\n').slice(0, 3).join('\n> ')}${s.content.split('\n').length > 3 ? '\n> ...' : ''}\n→ Is this still accurate? What's changed?`
+  );
+
+  return {
+    status: 'needs_update',
+    currentInfo: current,
+    sections,
+    questions,
+    daysSinceUpdate,
+  };
 }
 
 /**
@@ -199,20 +238,29 @@ async function createMeggFiles(
 ): Promise<{ success: boolean; message: string }> {
   const meggDir = path.join(root, MEGG_DIR_NAME);
   const now = getTimestamp();
+  const infoPath = path.join(meggDir, INFO_FILE_NAME);
 
   try {
     await ensureDir(meggDir);
 
-    // Create info.md
+    // Preserve `created` timestamp if updating existing file
+    let createdTimestamp = now;
+    if (content.update && await exists(infoPath)) {
+      const existing = await readFile(infoPath);
+      const createdMatch = existing.match(/^created:\s*(.+)$/m);
+      if (createdMatch) createdTimestamp = createdMatch[1].trim();
+    }
+
+    // Create/update info.md
     const infoContent = `---
-created: ${now}
+created: ${createdTimestamp}
 updated: ${now}
 type: context
 ---
 
 ${content.info}
 `;
-    await writeFile(path.join(meggDir, INFO_FILE_NAME), infoContent);
+    await writeFile(infoPath, infoContent);
 
     // Create knowledge.md if provided
     if (content.knowledge) {
@@ -231,7 +279,9 @@ ${content.knowledge}
 
     return {
       success: true,
-      message: `✓ megg initialized in ${meggDir}`,
+      message: content.update
+        ? `✓ megg info.md updated in ${meggDir}`
+        : `✓ megg initialized in ${meggDir}`,
     };
   } catch (err) {
     return {
@@ -247,13 +297,15 @@ ${content.knowledge}
 export async function initCommand(
   projectRoot?: string,
   infoContent?: string,
-  knowledgeContent?: string
+  knowledgeContent?: string,
+  update?: boolean
 ): Promise<string> {
-  // If content provided, create files
+  // If content provided, create or update files
   if (infoContent) {
     const content: InitContent = {
       info: infoContent,
       knowledge: knowledgeContent,
+      update,
     };
 
     const result = await init(projectRoot, content);
@@ -267,11 +319,22 @@ export async function initCommand(
   const analysis = await init(projectRoot);
 
   if ('status' in analysis) {
-    if (analysis.status === 'already_initialized') {
-      return analysis.message || 'Already initialized.';
+    // Update analysis — show sections with targeted questions
+    if (analysis.status === 'needs_update') {
+      const a = analysis as import('../types.js').UpdateAnalysis;
+      let output = '# megg Update Analysis\n\n';
+      if (a.daysSinceUpdate > 0) {
+        output += `> ⚠️ info.md last updated ${a.daysSinceUpdate} days ago\n\n`;
+      }
+      output += 'Review each section and confirm what has changed:\n\n';
+      for (const q of a.questions) {
+        output += q + '\n\n---\n\n';
+      }
+      output += 'Call `init(path, { info: "...", update: true })` with the updated content to save.';
+      return output;
     }
 
-    // Format analysis for display
+    // Format fresh analysis for display
     let output = '# megg Init Analysis\n\n';
 
     if (analysis.parentChain && analysis.parentChain.length > 0) {
