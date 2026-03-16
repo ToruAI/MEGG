@@ -112,7 +112,7 @@ export interface LearnPromptResult {
  * Validates entry type.
  */
 export function isValidEntryType(type: string): type is EntryType {
-  return ['decision', 'pattern', 'gotcha', 'context'].includes(type);
+  return ['rule', 'fact', 'decision', 'process'].includes(type);
 }
 
 /**
@@ -127,7 +127,7 @@ export async function learnCommand(
 ): Promise<string> {
   // Validate type
   if (!isValidEntryType(type)) {
-    return `Error: Invalid type "${type}". Must be one of: decision, pattern, gotcha, context`;
+    return `Error: Invalid type "${type}". Must be one of: rule, fact, decision, process`;
   }
 
   // Parse topics
@@ -162,7 +162,7 @@ export async function learnCommand(
  */
 export async function quickLearn(
   content: string,
-  type: EntryType = 'context',
+  type: EntryType = 'fact',
   targetPath?: string
 ): Promise<LearnResult> {
   // Extract title from first line or first sentence

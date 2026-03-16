@@ -54,7 +54,7 @@ server.tool(
   "Add a knowledge entry to the nearest .megg/knowledge.md. Entries have type (decision/pattern/gotcha/context), topics for categorization, and content.",
   {
     title: z.string().describe("Short title for the entry"),
-    type: z.enum(["decision", "pattern", "gotcha", "context"]).describe("Entry type: decision (architectural choice), pattern (how we do things), gotcha (trap to avoid), context (background info)"),
+    type: z.enum(["rule", "fact", "decision", "process"]).describe("Entry type: rule (always/never do X), fact (this is true about X), decision (we chose X because Y), process (how to do X step by step)"),
     topics: z.array(z.string()).describe("Tags for categorization (e.g., ['auth', 'api', 'security'])"),
     content: z.string().describe("The knowledge content in markdown"),
     path: z.string().optional().describe("Target path (defaults to cwd, finds nearest .megg)"),

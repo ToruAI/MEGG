@@ -12,7 +12,7 @@
 // Knowledge Entry Types
 // ============================================================================
 
-export type EntryType = 'decision' | 'pattern' | 'gotcha' | 'context';
+export type EntryType = 'rule' | 'fact' | 'decision' | 'process';
 
 export interface KnowledgeEntry {
   date: string;

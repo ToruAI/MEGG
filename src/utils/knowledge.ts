@@ -62,7 +62,7 @@ function parseEntry(block: string): KnowledgeEntry | null {
   const title = headerMatch[2].trim();
 
   // Parse metadata lines
-  let type: EntryType = 'context';
+  let type: EntryType = 'fact';
   let topics: string[] = [];
   let contentStart = 1;
 
@@ -131,25 +131,28 @@ export function generateSummary(parsed: ParsedKnowledge): string {
     summary += '\n';
   }
 
-  // Patterns
-  const patterns = byType.get('pattern') || [];
-  if (patterns.length > 0) {
-    summary += `## Patterns (${patterns.length})\n`;
-    for (const p of patterns.slice(0, 5)) {
-      summary += `- ${p.title}\n`;
+  // Rules
+  const rules = byType.get('rule') || [];
+  if (rules.length > 0) {
+    summary += `## Rules (${rules.length})\n`;
+    for (const r of rules.slice(0, 5)) {
+      summary += `- ${r.title}\n`;
     }
-    if (patterns.length > 5) {
-      summary += `- ... and ${patterns.length - 5} more\n`;
+    if (rules.length > 5) {
+      summary += `- ... and ${rules.length - 5} more\n`;
     }
     summary += '\n';
   }
 
-  // Gotchas (important for avoiding issues)
-  const gotchas = byType.get('gotcha') || [];
-  if (gotchas.length > 0) {
-    summary += `## Gotchas (${gotchas.length})\n`;
-    for (const g of gotchas) {
-      summary += `- ⚠️ ${g.title}\n`;
+  // Processes
+  const processes = byType.get('process') || [];
+  if (processes.length > 0) {
+    summary += `## Processes (${processes.length})\n`;
+    for (const p of processes.slice(0, 5)) {
+      summary += `- ${p.title}\n`;
+    }
+    if (processes.length > 5) {
+      summary += `- ... and ${processes.length - 5} more\n`;
     }
     summary += '\n';
   }

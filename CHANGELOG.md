@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Loads current info, analyzes what may be outdated
   - Asks targeted questions section by section
   - Updates `updated` timestamp on save
+- **Universal entry types** - New taxonomy that works for any domain (not just code)
+  - `rule` — always/never do X (replaces `pattern` + `gotcha`)
+  - `fact` — this is true about X (replaces `context`)
+  - `decision` — we chose X because Y (unchanged)
+  - `process` — how to do X step by step (new)
+
+### Breaking Changes
+- Entry types `pattern`, `gotcha`, `context` removed; replaced by `rule`, `fact`, `process`
+  - Existing knowledge.md files with old types will still parse (type is read as-is from file)
+  - New entries must use the new types
 
 ## [1.1.0] - 2026-01-17
 
