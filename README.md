@@ -129,10 +129,10 @@ When you call `context("clients/acme")`, megg loads the full chain:
 
 | Type | Use For | Example |
 |------|---------|---------|
-| `decision` | Architectural choices | "We chose PostgreSQL over MongoDB because..." |
-| `pattern` | Team conventions | "API endpoints use kebab-case" |
-| `gotcha` | Traps to avoid | "Don't use localStorage for auth tokens" |
-| `context` | Background info | "This client requires HIPAA compliance" |
+| `rule` | Always/never do X | "Don't use localStorage for auth tokens" |
+| `fact` | This is true about X | "This client requires HIPAA compliance" |
+| `decision` | We chose X because Y | "We chose PostgreSQL over MongoDB because..." |
+| `process` | How to do X step by step | "Deploy: build → tag → push → migrate" |
 
 ### Smart Token Management
 
@@ -164,7 +164,10 @@ npx megg context
 npx megg context . --topic auth
 
 # Add a decision
-npx megg learn "JWT Auth" decision "auth,security" "We use JWT with refresh tokens..."
+npx megg learn "JWT Auth" decision "auth,security" "We use JWT because..."
+
+# Add a rule
+npx megg learn "No localStorage for tokens" rule "auth,security" "Use httpOnly cookies instead"
 
 # Initialize megg
 npx megg init
@@ -300,7 +303,7 @@ Brief description of what this project is.
 3. When Z, prefer A
 
 ## Memory Files
-- knowledge.md: decisions, patterns, gotchas
+- knowledge.md: rules, facts, decisions, processes
 ```
 
 ### knowledge.md Entry Format
