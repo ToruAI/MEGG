@@ -1,18 +1,17 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
+# Spec Instructions
 
-These instructions are for AI assistants working in this project.
+Specs live in `.ai/specs/`. Read the relevant spec before implementing anything non-trivial.
 
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
+When planning features or architectural changes, follow the `/openspec-workflow` skill:
+write a draft spec in `.ai/changes/` first, then implement.
 
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
+## Specs Index
 
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
+| ID | File | What |
+|----|------|------|
+| SVC-001 | `service-context.md` | context() — load domain chain + knowledge + state |
+| SVC-002 | `service-learn.md` | learn() — append knowledge entry |
+| SVC-003 | `service-init.md` | init() — initialize or update .megg/ |
+| SVC-004 | `service-maintain.md` | maintain() — scan knowledge health |
+| SVC-005 | `service-state.md` | state() — ephemeral session handoff |
+| SVC-006 | `service-setup.md` | setup() — one-time machine config |
