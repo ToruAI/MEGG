@@ -5,8 +5,8 @@
   "mcpName": "io.github.toruai/megg",
   "main": "build/index.js",
   "bin": {
-    "megg": "./build/cli.js",
-    "megg-mcp": "./build/index.js"
+    "megg": "build/cli.js",
+    "megg-mcp": "build/index.js"
   },
   "files": [
     "build",
@@ -48,7 +48,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/toruai/megg"
+    "url": "git+https://github.com/toruai/megg.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
