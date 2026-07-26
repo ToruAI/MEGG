@@ -5,7 +5,11 @@ All notable changes to megg will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-03-15
+## [1.2.0] - 2026-07-26
+
+### Changed
+- README repositioned around what megg actually is: git-native agent memory that travels with the repo — versus machine-local auto-memory and central-store tools. Added an honest Security Model section (memory is model input; treat `.megg/` changes like code in review).
+- `package.json`: `mcpName` (`io.github.toruai/megg`) for the official MCP Registry, sharper description.
 
 ### Added
 - **Stale info.md warning** - `context()` now warns when `info.md` hasn't been updated in >30 days

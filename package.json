@@ -1,7 +1,8 @@
 {
   "name": "megg",
   "version": "1.2.0",
-  "description": "megg - Memory for AI Agents. Simplified knowledge system with auto-discovery and size-aware loading.",
+  "description": "Git-native memory for AI agents — markdown knowledge in .megg/ folders that travels with your repo. MCP server + CLI for Claude Code.",
+  "mcpName": "io.github.toruai/megg",
   "main": "build/index.js",
   "bin": {
     "megg": "./build/cli.js",

@@ -1,22 +1,28 @@
-# megg - Persistent Memory for AI Agents
+# megg — AI agent memory that lives in your repo
 
 [![npm version](https://img.shields.io/npm/v/megg.svg)](https://www.npmjs.com/package/megg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io/)
 
-> **Give your AI agents long-term memory.** A lightweight knowledge management system for LLM agents with automatic context loading and smart token management.
+> **Claude Code's memory stays on your machine. megg puts it in the repo** — plain markdown in `.megg/` folders, versioned with git. Push, and your teammate's (and your CI's) agent already knows everything yours learned.
 
 ## The Problem
 
-AI agents are stateless. Every session starts from zero. Your agent:
-- Forgets architectural decisions you made yesterday
-- Re-discovers the same patterns over and over
-- Doesn't know "how we do things here"
-- Can't build on previous work
+Your agent's memory doesn't travel. Claude Code remembers — but in `~/.claude/`, on one machine:
+- New laptop, teammate, CI runner, fresh worktree: the agent starts from zero
+- Architectural decisions live outside the codebase they describe
+- A monorepo gets one flat memory for wildly different subprojects
+- Memory can't be reviewed, diffed, or reverted like everything else you trust
 
 ## The Solution
 
-**megg** turns stateless AI agents into "good employees" who remember context across sessions. Works with Claude, GPT, and any MCP-compatible AI assistant.
+**megg** keeps agent memory as markdown in `.megg/` folders inside your directory tree — next to the code it describes, versioned with the repo. Works with Claude Code, Claude Desktop, and any MCP-compatible assistant.
+
+- `git push` → every teammate's agent shares the memory
+- Per-directory scope: `api/.megg/` knows API conventions, `clients/acme/.megg/` knows Acme
+- Human-readable, human-editable, reviewable in PRs
+
+This is how we work at ToruAI: ~30 `.megg` folders across client projects, internal tools and this repo itself — from company root down to single features.
 
 ```
 Session 1: "We decided to use JWT with refresh tokens"
@@ -28,6 +34,7 @@ Session 47: Agent automatically knows about JWT decision
 
 ## Features
 
+- **Git-Native** - Memory is markdown in `.megg/` folders: versioned, diffable, shared with the repo
 - **Auto-Discovery** - Walks directory tree to find relevant context
 - **Hierarchical Context** - Company → Project → Feature inheritance
 - **Size-Aware Loading** - Smart token management (full/summary/blocked)
@@ -270,14 +277,16 @@ Files: src/middleware/auth.ts, src/utils/jwt.ts
 
 ## Comparison with Alternatives
 
-| Feature | megg | .cursorrules | Custom prompts |
-|---------|------|--------------|----------------|
-| Hierarchical context | Yes | No | No |
-| Auto-discovery | Yes | No | No |
-| Knowledge accumulation | Yes | No | Manual |
-| Token management | Yes | No | No |
-| MCP compatible | Yes | No | No |
-| Cross-session memory | Yes | No | No |
+| | megg | Claude Code auto-memory | Central-store memory tools |
+|---|------|------------------------|----------------------------|
+| Lives in the repo | Yes — `.megg/` folders | No — `~/.claude/`, machine-local | No — home dir or database |
+| Travels with `git push` | Yes | No | No (hosted sync at best) |
+| Per-directory scope in a monorepo | Yes | Per-project only | Varies |
+| Reviewable/diffable in PRs | Yes | No | No |
+| Human-editable markdown | Yes | Yes | Sometimes |
+| Knowledge accumulation + session handoff | Yes | Partial | Varies |
+
+Claude Code's built-in memory is good — and stays on one machine. Vector/graph memory platforms are powerful — and live outside your repo. megg's bet is simpler: **the agent's learned context belongs in version control, next to the code it's about.**
 
 ## File Structure
 
@@ -311,7 +320,7 @@ Brief description of what this project is.
 ```markdown
 ---
 
-## 2024-01-15 - JWT Auth Decision
+## 2026-07-15 - JWT Auth Decision
 **Type:** decision
 **Topics:** auth, api, security
 
@@ -345,6 +354,16 @@ megg makes AI agents behave like good employees who:
 - **Build institutional knowledge** - The system grows smarter over time
 
 Every AI session starts fresh, but with megg, your agent remembers.
+
+## Security Model
+
+megg's memory is plain text that enters your agent's context. Treat it accordingly:
+
+- **`.megg/` content is instruction-adjacent.** The model reads knowledge entries as trusted project memory, so a malicious entry is a prompt injection. Review changes to `.megg/` in PRs the way you review code.
+- **Third-party repos bring their own memory.** If you clone a repo you don't trust, its `.megg/` folders load like any other. Inspect or delete them before running an agent session inside it.
+- **The context chain walks up the directory tree by design** — parent and company-level `.megg/` folders are included. Keep secrets out of knowledge files: they are plain markdown in git, and they end up in model context.
+
+None of this is unique to megg — any memory system that feeds text to a model has the same property — but a memory you can `git diff` is at least one you can audit.
 
 ## Development
 
